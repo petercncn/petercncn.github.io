@@ -101,7 +101,7 @@ jQuery(function($){
 	        		wap = '<p class="desc">手机端请截屏，打开微信扫一扫，从相册里选择截图</p>';
 	        	}
 
-	            return '\n            <section class="erphp-wppay-qrcode mobantu-wppay">\n                <section class="tab">\n                    '+paymentImg+'\n                           </section>\n                <section class="tab-list" '+bgstyle+'>\n                    <section class="item">\n         <div class="wppay-title">扫一扫支付 <span class="price">'+t.price+'</span> 元</div>               <section class="qr-code">\n                            <img src="'+t.code+'" class="img" alt="">\n                        </section>\n                        <p class="account">支付完成后请等待5秒左右，期间请勿关闭此页面</p>\n                        '+wap+'\n                    </section>\n                                                      </section>\n            </section>\n        '
+	            return '\n            <section class="erphp-wppay-qrcode mobantu-wppay">\n                <section class="tab">\n                    '+paymentImg+'\n                           </section>\n                <section class="tab-list" '+bgstyle+'>\n                    <section class="item">\n         <div class="wppay-title">扫一扫支付 <span class="price">'+t.price+'</span> 元</div>               <section class="qr-code">\n                            <img src="'+t.code+'" class="img" alt="">\n                        </section>\n                        <p class="account">支付完成后请等待5秒左右，期间请勿关闭此页面</p>\n         <p class="desc wtime"></p>               '+wap+'\n                    </section>\n                                                      </section>\n            </section>\n        '
 	        }
         }
     },
@@ -268,8 +268,8 @@ jQuery(function($){
     			var href = _ERPHPDOWN.uri+"/buy.php?postid="+post_id;
 		        layer.open({
 		            type: 2,
-		            area: ['350px', '445px'],
-		            title: '您的购买详单',
+		            area: ['370px', '445px'],
+		            title: '购买详情',
 		            resize:false,
 		            scrollbar: false,
 		            shadeClose: true,
@@ -460,7 +460,7 @@ jQuery(function($){
 	        var href = _ERPHPDOWN.uri+"/buy.php?user_type="+user_type;
 	        layer.open({
 	            type: 2,
-	            area: ['350px', '480px'],
+	            area: ['370px', '480px'],
 	            title: '购买VIP',
 	            resize:false,
 	            scrollbar: false,
@@ -499,7 +499,7 @@ jQuery(function($){
         var href = $(this).attr("href");
         layer.open({
             type: 2,
-            area: ['350px', '480px'],
+            area: ['370px', '480px'],
             title: '购买详情',
             resize:false,
             scrollbar: false,
@@ -514,7 +514,7 @@ jQuery(function($){
         var href = $(this).attr("href");
         layer.open({
             type: 2,
-            area: ['350px', '445px'],
+            area: ['370px', '445px'],
             title: '下载详情',
             resize:false,
             scrollbar: false,
@@ -524,9 +524,47 @@ jQuery(function($){
         return false;
     });
 
+    $("body").on("click", ".erphpdown-activation-vip", function(){
+    	var post_id = $(this).data("id");
+        if(post_id){
+            popup.showToast({
+                type: "it",
+                text: "处理中...",
+                time: 1e5
+            });
+            $.post(_ERPHP.ajaxurl, {
+                "action": "epd_activation_vip",
+                "post_id": post_id
+            }, function(result) {
+                
+                if( result.status == 200 ){
+                    popup.hideToast();
+                    location.reload(true);
+                }else if( result.status == 202 ){
+                    popup.showToast({
+                        type: "text",
+                        text: "抱歉，权限不足！"
+                    });
+                }else{
+                    popup.showToast({
+                        type: "text",
+                        text: "获取失败，请检查今天的下载次数是否已用光！"
+                    });
+                }
+            }, 'json'); 
+        }else{
+            popup.showToast({
+                type: "text",
+                text: "获取失败！"
+            });
+        }
+        return false;
+    });
+
 
     $("body").on("click", ".erphpdown-see-btn", function(){
     	var post_id = $(this).data("post"),
+    		token = $(this).data("token"),
     		vip = $(this).data("vip");
         if(post_id){
             popup.showToast({
@@ -537,7 +575,8 @@ jQuery(function($){
             $.post(_ERPHP.ajaxurl, {
                 "action": "epd_see",
                 "post_id": post_id,
-                "vip": vip
+                "vip": vip,
+                "token": token
             }, function(result) {
                 
                 if( result.status == 200 ){
@@ -668,7 +707,11 @@ jQuery(function($){
 	            if(data.status == '1'){
 	                
 	            	if(that.hasClass('erphp-promo-do-vip')){
-	            		var oldprice = parseFloat($(".erphpdown-type-desc .type-price span").text());
+	            		if($(".erphpdown-type-desc .type-price span").data("price")){
+	            			var oldprice = parseFloat($(".erphpdown-type-desc .type-price span").data("price"));
+	            		}else{
+		            		var oldprice = parseFloat($(".erphpdown-type-desc .type-price span").text());
+		            	}
 	            		if(data.type == 1){
 	            			if(oldprice <= data.money){
 	            				layer.msg("抱歉，价格异常");
@@ -722,6 +765,72 @@ jQuery(function($){
     	return false;
     });
 
+
+    if(_ERPHPDOWN.tuan == '1'){
+	    $(".erphpdown-tuan-loader").on("click",function(){
+	        var post_id = $(this).data("post");
+	        var tuan_num = $(this).data("num");
+	        if(post_id){
+	            layer.msg("处理中...", {
+			        icon: 16,
+			        shade: 0.4,
+			        time: -1
+			    });
+	            $.post(_ERPHP.ajaxurl, {
+	                "action": "epd_tuan",
+	                "post_id": post_id,
+	                "tuan_num": tuan_num
+	            }, function(result) {
+	                if( result.status == 200 ){
+	                    location.reload(true);
+	                }else if( result.status == 201 ){
+	                    layer.msg(result.msg);
+	                }else{
+	                    layer.msg("参团失败，请稍后重试！");
+	                }
+	            }, 'json'); 
+	        }
+	        return false;
+	    });
+
+	    $(".erphpdown-tuituan").click(function(){
+	        var post_tui = $(this).data("tui");
+	        if(confirm("退团会扣除"+post_tui+"%的手续费哦~")){
+	            var post_id = $(this).data("post");
+	            var tuan_num = $(this).data("num");
+	            if(post_id && tuan_num){
+	                layer.msg("处理中...", {
+				        icon: 16,
+				        shade: 0.4,
+				        time: -1
+				    });
+	                $.post(_ERPHP.ajaxurl, {
+	                    "action": "epd_tuituan",
+	                    "post_id": post_id,
+	                    "tuan_num": tuan_num
+	                }, function(result) {
+	                    
+	                    if( result.status == 200 ){
+	                    	layer.msg("退团成功！");
+	                        location.reload(true);
+
+	                    }else if( result.status == 201 ){
+	                        layer.msg(result.msg);
+	                        if(result.reload){
+	                            location.reload(true);
+	                        }
+	                    }else{
+	                        layer.msg("退团失败，请稍后重试！");
+	                    }
+	                }, 'json'); 
+	            }else{
+	                layer.msg("获取退团信息失败！");
+	            }
+	            return false;
+	        }
+	    });
+	}
+
     if($(".erphpdown-see-pay").length > 1){
     	$(".erphpdown-see-pay .erphpdown-buy, .erphpdown-see-pay .erphp-see-must").after('<span class="erphpdown-see-tips">（购买一个，查看所有）</span>');
     }
@@ -737,12 +846,103 @@ jQuery(function($){
     clipboard.on("success", function(e) {
         layer.msg("已复制",{time:500});
     });
+
+    if(_ERPHPDOWN.danmu == '1'){
+	    $.fn.barrage = function (opt) {
+		    var _self = $(this);
+		    var opts = {
+		        data: [], //数据
+		        row: 5, //显示行数
+		        time: 2500, //时间
+		        gap: 15, //间隙
+		        ismoseoverclose: true, //悬浮是否停止
+		    }
+		    var settings = $.extend({}, opts, opt); //合并参数
+		    var M = {},
+		        Obj = {};
+		    Obj.data = settings.data;
+		    M.bgColors = ['#f79a3e', '#e66760', '#5382af', ' #aea79f', '#37b8af', '#008b5d', ' #f0b849', '#499df3', ' #5f6c72', ' #8c88cd']; //随机背景色数组
+		    Obj.arrEle = []; //预计存储dom集合数组
+		    M.barrageBox = $('<div id="erphpdown-danmu"></div>'); //存所有弹幕的盒子
+		    M.timer = null;
+		    var createView = function () {
+		    	if(Obj.data.length){
+			        var randomIndex = Math.floor(Math.random() * M.bgColors.length);
+			        var ele = $('<li class="' + Obj.data[0].type + '" style="opacity:0;background-color:' + M.bgColors[randomIndex] + '">' + Obj.data[0].avatar + Obj.data[0].content + '</li>');
+			        var str = Obj.data.shift();
+			        ele.animate({
+			            'opacity': 1,
+			            'margin-bottom': settings.gap
+			        }, 1000)
+			        M.barrageBox.append(ele);
+			        Obj.data.push(str);
+			    }
+
+		        if (M.barrageBox.children().length > settings.row) {
+
+		            M.barrageBox.children().eq(0).animate({
+		                'opacity': 0,
+		            }, 300, function () {
+		                $(this).css({
+		                    'margin': 0,
+		                }).remove();
+		            })
+		        }
+		    }
+		    M.mouseClose = function () {
+		        settings.ismoseoverclose && (function () {
+
+		            M.barrageBox.mouseover(function () {
+		                clearInterval(M.timer);
+		                M.timer = null;
+		            }).mouseout(function () {
+		                M.timer = setInterval(function () { //循环
+		                    createView();
+		                }, settings.time)
+		            })
+
+		        })()
+		    }
+		    Obj.close = function () {
+		        M.barrageBox.remove();
+		        clearInterval(M.timer);
+		        M.timer = null;
+		    }
+		    Obj.start = function () {
+		        if (M.timer) return;
+		        _self.append(M.barrageBox); //把弹幕盒子放到页面中
+		        createView(); //创建视图并开始动画
+		        M.timer = setInterval(function () { //循环
+		            createView();
+		        }, settings.time)
+		        M.mouseClose();
+		    }
+		    return Obj;
+		}
+
+		$.post(_ERPHP.ajaxurl, {
+            "action": "erphpdown_danmu",
+        }, function(result) {
+            var Obj = $('body').barrage({
+	            data: result.data,
+	            row: result.row,
+	            time: 2500,
+	            gap: 15,
+	            ismoseoverclose: true,
+	        })
+	        if ($('#erphpdown-danmu').length == 0) {
+	            Obj.start();
+	        }
+        }, 'json'); 
+
+	}
+
 });
 
 function erphpdownOrderSuccess(){
 	layer.open({
 		title: '提示',
-		area: ['300px', '180px'],
+		area: ['370px', '180px'],
 		btn: ['已支付', '再想想'],
 		content: '订单是否已支付？',
 		yes: function(index, layero){
@@ -760,4 +960,4 @@ function erphpdownOrderSuccess(){
 	});
 }
 
-/* Powered by QQ:82708210 */
+/* Powered by QQ */

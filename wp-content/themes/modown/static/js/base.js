@@ -1,4 +1,12 @@
 var erphpWeixinScan, erphpWeixinScanTimer;
+var uru_ajax = _MBT.uri;
+if(_MBT.uru == '1'){
+	uru_ajax = _MBT.child;
+}
+var urg_ajax = _MBT.uri;
+if(_MBT.urg == '1'){
+	urg_ajax = _MBT.child;
+}
 var MOBANTU = {
 	paged: 1,
 	lazy: 0,
@@ -27,14 +35,18 @@ var MOBANTU = {
 			that.lazy = 0;
 		}
 		if(that.lazy) that.lazyload();
-		if(that.ias) that.iasLoad();
+		if(that.ias){
+			that.iasLoad();
+		}else if(that.water){
+			that.waterLoad();
+		}
 		that.catFilter();
 		that.video();
 		that.audio();
 		if(!that.body.hasClass("logged-in")){
 			that.login();
 		}
-		if(that.body.hasClass("page-template-tougao")){
+		if(that.body.hasClass("page-template-tougao") || that.body.hasClass("page-template-ask")){
 			that.tougao();
 		}
 		that.sidebar();
@@ -75,7 +87,7 @@ var MOBANTU = {
 
 		jQuery(".header__notify_read").on("click",function(){
 			jQuery.ajax({
-		        url: _MBT.uru+'/action/user.php',
+		        url: uru_ajax+'/action/user.php',
 		        type: 'POST',
 		        dataType: 'json', 
 		        data: {
@@ -96,14 +108,20 @@ var MOBANTU = {
 	        	layer.msg('查询中...');
 	            jQuery.post(_MBT.admin_ajax, {
 	                "action": "erphp_faka_query",
-	                "order": erphp_faka_order
+	                "order": erphp_faka_order,
+	                "nonce": $("#security_nonce").val()
 	            }, function(result) {
 	            	layer.closeAll();
 	                if( result.status == 200 ){
 	                    jQuery(".results").html(result.faka);
 	                }else{
 	                	jQuery(".results").html('');
-	                    layer.msg('查询失败，请稍后重试！');
+		                layer.msg('查询失败，请稍后重试！', {
+	                        icon:5,
+	                        time:2000
+	                    }, function () {
+	                        location.reload();
+	                    });
 	                }
 	            }, 'json'); 
 	        }else{
@@ -123,17 +141,40 @@ var MOBANTU = {
 		    }
 		});
 
+		jQuery(".vip-faqs .items .item h5").click(function(){
+			jQuery(this).parent().toggleClass("active");
+			if(jQuery(this).next().hasClass("active")){
+				jQuery(this).next().slideUp();
+				jQuery(this).next().removeClass("active");
+			}else{
+				jQuery(this).next().slideDown();
+				jQuery(this).next().addClass("active");
+			}
+		});
+
+		jQuery(".posttoptab a").click(function(){
+			jQuery(".posttoptab a").removeClass("active");
+			jQuery(this).addClass("active");
+
+			jQuery(".posttopcon").removeClass("active");
+			jQuery(".posttopcon#posttopcon"+jQuery(this).data("index")).addClass("active");
+		});
+
 		if(_MBT.anchor == '1' && that.body.hasClass("home") && jQuery(".contents .mocat").length){
     		var home_anchor_html = '<div class="home-anchor-nav"><ul class="home-anchors"><li><a href="javascript:scrollToTop();"><i class="icon icon-home-s"></i>首页</a></li>';
     		jQuery(".contents .mocat").each(function() {
     			if(jQuery(this).find(".mocat-title-nav").length){
-    				var tit = jQuery(this).find(".mocat-title-nav a.active>span").html();
-	    			tit = tit.replace("<i>NEW</i>","");
-	    			home_anchor_html += '<li><a data-menuanchor="'+jQuery(this).attr("id")+'" href="#'+jQuery(this).attr("id")+'" title="'+tit+'">'+tit+'</a></li>';
+    				var tit = jQuery(this).find(".mocat-title-nav a.active>span").text();
+    				if(tit){
+		    			tit = tit.replace("<i>NEW</i>","");
+		    			home_anchor_html += '<li><a data-menuanchor="'+jQuery(this).attr("id")+'" href="#'+jQuery(this).attr("id")+'" title="'+tit+'">'+tit+'</a></li>';
+		    		}
     			}else{
-	    			var tit = jQuery(this).find("h2>span").html();
-	    			tit = tit.replace("<i>NEW</i>","");
-	    			home_anchor_html += '<li><a data-menuanchor="'+jQuery(this).attr("id")+'" href="#'+jQuery(this).attr("id")+'" title="'+tit+'">'+tit+'</a></li>';
+	    			var tit = jQuery(this).find("h2>span").text();
+	    			if(tit){
+		    			tit = tit.replace("<i>NEW</i>","");
+		    			home_anchor_html += '<li><a data-menuanchor="'+jQuery(this).attr("id")+'" href="#'+jQuery(this).attr("id")+'" title="'+tit+'">'+tit+'</a></li>';
+		    		}
 	    		}
     		});
     		home_anchor_html += '</ul></div>';
@@ -195,10 +236,18 @@ var MOBANTU = {
 	            jQuery.cookie('mbt_theme_night', '1', {path: '/'});
 	            that.body.addClass('night');
 	            jQuery(this).addClass('active');
+	            var logo_night = $(".logo a img").data("dark");
+	            if(logo_night){
+	            	$(".logo a img").attr("src",logo_night);
+	            }
 	        } else {
 	            jQuery.cookie('mbt_theme_night', '2', {path: '/'});
 	            that.body.removeClass('night');
 	            jQuery(this).removeClass('active');
+	            var logo_night = $(".logo a img").data("light");
+	            if(logo_night){
+	            	$(".logo a img").attr("src",logo_night);
+	            }
 	        }
     	});
 
@@ -242,6 +291,9 @@ var MOBANTU = {
 			if(jQuery(".nav-main .mega3").length){
 				jQuery(".nav-main .mega3").removeClass('mega3');
 			}
+			if(jQuery(".nav-main .mega33").length){
+				jQuery(".nav-main .mega33").removeClass('mega33');
+			}
 			if(jQuery(".nav-main .mega2").length){
 				jQuery(".nav-main .mega2").removeClass('mega2');
 			}
@@ -266,6 +318,15 @@ var MOBANTU = {
 				jQuery(this).removeClass('mg-hide').addClass('mg-show');
 			},function(){
 				jQuery(".nav-main > li.mega4 > .sub-menu > li").removeClass('mg-hide').removeClass('mg-show');
+			});
+		}
+
+		if(jQuery(".nav-main .mega33").length){
+			jQuery(".nav-main > li.mega33 > .sub-menu > li").hover(function(){
+				jQuery(".nav-main > li.mega33 > .sub-menu > li").addClass('mg-hide');
+				jQuery(this).removeClass('mg-hide').addClass('mg-show');
+			},function(){
+				jQuery(".nav-main > li.mega33 > .sub-menu > li").removeClass('mg-hide').removeClass('mg-show');
 			});
 		}
 
@@ -311,7 +372,7 @@ var MOBANTU = {
 		if(jQuery(".ckplayer-video-real").length){
 			jQuery(".ckplayer-video-real").bind('contextmenu',function() { return false; });
 			jQuery(".ckplayer-video-real").each(function(){
-				var conv = jQuery(this).data("key")
+				var conv = jQuery(this).data("key"),
 					conn = jQuery(this).data("nonce");
 				if(jQuery(this).hasClass("video-blob")){
 					jQuery(".article-video").append("<div class='article-video-loading' style='z-index: 9;position: absolute;top: calc(50% - 12px);left: 0;right: 0;color: #fff;font-size: 16px;text-align: center;'>视频加载中...</div>");
@@ -328,21 +389,25 @@ var MOBANTU = {
 					            container:"#ckplayer-video-"+conn,
 					            variable:"player",
 					            autoplay:false,
-					            html5m3u8:true,
-					            //flashplayer:true,
-					            video:window.URL.createObjectURL(blob)
+					            plug:'hls.js',
+					            video:window.URL.createObjectURL(blob),
+					            menu: []
 					        });
 				        }
 				    }
 				    xhr.send();
 				}else{
+					var cplug = '';
+					if(Base64.decode(conv).includes('.m3u8') || Base64.decode(conv).includes('.M3U8')){
+						cplug = 'hls.js';
+					}
 			        new ckplayer({
 			            container:"#ckplayer-video-"+conn,
 			            variable:"player",
 			            autoplay:false,
-			            html5m3u8:true,
-			            //flashplayer:true,
-			            video:Base64.decode(conv)
+			            plug:cplug,
+			            video:Base64.decode(conv),
+			            menu: []
 			        });
 			    }
 			});
@@ -496,10 +561,14 @@ var MOBANTU = {
 			var currbtn = jQuery(this);
 			if(!currbtn.hasClass("disabled")){	
 				currbtn.addClass("disabled");
-				var msgTips = layer.msg('升级中...');
+				var msgTips = layer.msg("升级中...", {
+				        icon: 16,
+				        shade: 0.4,
+				        time: -1
+				    });
 				if(jQuery("body").hasClass("logged-in")){
 					jQuery.post(
-					_MBT.uru+'/action/user.php',
+					uru_ajax+'/action/user.php',
 					{
 						userType: currbtn.data("type"),
 						action: "user.vip"
@@ -513,6 +582,7 @@ var MOBANTU = {
 									layer.open({
 									  title: '提示',
 									  content: '余额不足，现在去充值？',
+									  btn: ['确定', '取消'],
 									  yes: function(index, layero){
 									    location.href=data.link;
 									  }
@@ -528,37 +598,8 @@ var MOBANTU = {
 							          shadeClose: true,
 									  content: data.payment
 									});
-									jQuery('body').on("click",".erphpdown-type-link",function(){
-										layer.closeAll();
-									});
-									jQuery('body').on("click",".erphpdown-type-credit",function(){
-										layer.msg('升级中...');
-										jQuery.post(
-										_MBT.uru+'/action/user.php',
-										{
-											userType: jQuery(this).data("type"),
-											action: "user.vip.credit"
-										},
-										function (data) {
-											if( data.error ){
-												if( data.msg ){
-													if(data.error == 2){
-														layer.open({
-														  title: '提示',
-														  content: '余额不足，现在去充值？',
-														  yes: function(index, layero){
-														    location.href=data.link;
-														  }
-														});
-													}else{
-														layer.msg(data.msg);
-													}
-												}
-												return false;
-											}
-											layer.msg('恭喜您，升级VIP成功～');
-										},'json');
-									});
+									
+									
 								}else{
 									layer.msg(data.msg);
 								}
@@ -590,9 +631,7 @@ var MOBANTU = {
 							          shadeClose: true,
 									  content: data.payment
 									});
-									jQuery('body').on("click",".erphpdown-type-link",function(){
-										layer.closeAll();
-									});
+									
 								}else{
 									layer.msg(data.msg);
 								}
@@ -610,9 +649,13 @@ var MOBANTU = {
 			var currbtn = jQuery(this);
 			if(!currbtn.hasClass("disabled")){	
 				currbtn.addClass("disabled");
-				var msgTips = layer.msg('升级中...');
+				var msgTips = layer.msg("升级中...", {
+				        icon: 16,
+				        shade: 0.4,
+				        time: -1
+				    });
 				jQuery.post(
-				_MBT.uru+'/action/user.php',
+				uru_ajax+'/action/user.php',
 				{
 					cat: currbtn.data("cat"),
 					userType: jQuery("input[name='catvip"+currbtn.data("cat")+"']:checked").val(),
@@ -627,6 +670,7 @@ var MOBANTU = {
 								layer.open({
 								  title: '提示',
 								  content: '余额不足，现在去充值？',
+								  btn: ['确定', '取消'],
 								  yes: function(index, layero){
 								    location.href=data.link;
 								  }
@@ -642,38 +686,8 @@ var MOBANTU = {
 						          shadeClose: true,
 								  content: data.payment
 								});
-								jQuery('body').on("click",".erphpdown-type-link",function(){
-									layer.closeAll();
-								});
-								jQuery('body').on("click",".erphpdown-cat-credit",function(){
-									layer.msg('升级中...');
-									jQuery.post(
-									_MBT.uru+'/action/user.php',
-									{
-										userType: jQuery(this).data("type"),
-										cat: jQuery(this).data("cat"),
-										action: "user.vip.cat.credit"
-									},
-									function (data) {
-										if( data.error ){
-											if( data.msg ){
-												if(data.error == 2){
-													layer.open({
-													  title: '提示',
-													  content: '余额不足，现在去充值？',
-													  yes: function(index, layero){
-													    location.href=data.link;
-													  }
-													});
-												}else{
-													layer.msg(data.msg);
-												}
-											}
-											return false;
-										}
-										layer.msg('恭喜您，升级分类VIP成功～');
-									},'json');
-								});
+								
+								
 							}else{
 								layer.msg(data.msg);
 							}
@@ -686,6 +700,72 @@ var MOBANTU = {
 			return false;
 		});
 
+		jQuery('body').on("click",".erphpdown-type-link",function(){
+			layer.closeAll();
+		});
+
+		jQuery('body').on("click",".erphpdown-type-credit",function(){
+			layer.msg('升级中...');
+			jQuery.post(
+			uru_ajax+'/action/user.php',
+			{
+				userType: jQuery(this).data("type"),
+				action: "user.vip.credit"
+			},
+			function (data) {
+				if( data.error ){
+					if( data.msg ){
+						if(data.error == 2){
+							layer.open({
+							  title: '提示',
+							  content: '余额不足，现在去充值？',
+							  btn: ['确定', '取消'],
+							  yes: function(index, layero){
+							    location.href=data.link;
+							  }
+							});
+						}else{
+							layer.msg(data.msg);
+						}
+					}
+					return false;
+				}
+				layer.msg('恭喜您，升级VIP成功～');
+				location.reload();
+			},'json');
+		});
+
+		jQuery('body').on("click",".erphpdown-cat-credit",function(){
+			layer.msg('升级中...');
+			jQuery.post(
+			uru_ajax+'/action/user.php',
+			{
+				userType: jQuery(this).data("type"),
+				cat: jQuery(this).data("cat"),
+				action: "user.vip.cat.credit"
+			},
+			function (data) {
+				if( data.error ){
+					if( data.msg ){
+						if(data.error == 2){
+							layer.open({
+							  title: '提示',
+							  content: '余额不足，现在去充值？',
+							  btn: ['确定', '取消'],
+							  yes: function(index, layero){
+							    location.href=data.link;
+							  }
+							});
+						}else{
+							layer.msg(data.msg);
+						}
+					}
+					return false;
+				}
+				layer.msg('恭喜您，升级分类VIP成功～');
+			},'json');
+		});
+
 		jQuery(".day-checkin").click(function(){
 			var that = jQuery(this);
 			if(that.hasClass("active")){
@@ -696,7 +776,7 @@ var MOBANTU = {
 				that.addClass("disabled");
 				jQuery.ajax({  
 					type: 'POST',  
-					url:  _MBT.uru+'/action/user.php',
+					url:  uru_ajax+'/action/user.php',
 					dataType: 'json',
 					data: {
 						action: 'user.checkin',
@@ -732,10 +812,12 @@ var MOBANTU = {
 			jQuery(".sitetips").fadeOut();
 		});
 
-		jQuery(".sitetips .close").click(function(){
+		jQuery(".sitetips .close, .sitetips .btn").click(function(){
 			jQuery(".sitetips-pop-shadow").fadeOut();
 			jQuery(".sitetips").fadeOut();
-			jQuery.cookie('sitetips', '1', {expires: 1, path: '/'});
+			var today = new Date();
+			today.setHours(23,59,59,999);
+			jQuery.cookie('sitetips', '1', {expires: today , path: '/'});
 		});
 
 		if(jQuery.cookie('modown-fixed-da') != '1'){
@@ -962,9 +1044,9 @@ var MOBANTU = {
 	},
 	video: function(){
 		var that = this;
-		jQuery(".grids .grid-vd").each(function(){
-			var video = jQuery(this).data('video');
-			var id = jQuery(this).data('id');
+		jQuery(".grids .grid-vd .img").each(function(){
+			var video = jQuery(this).parent().data('video');
+			var id = jQuery(this).parent().data('id');
 			var myVid = jQuery(this).find('#video-' + id)[0];
 			var picwidth = jQuery(this).find('.thumb')[0].getBoundingClientRect().width;
 			var picheight = jQuery(this).find('.thumb')[0].getBoundingClientRect().height;
@@ -1017,7 +1099,7 @@ var MOBANTU = {
 			var cid = jQuery(this).find("option:selected").attr("value");
 			if(cid){
 				jQuery.post(
-					_MBT.uru+'/action/user.php',
+					uru_ajax+'/action/user.php',
 					{
 						action: 'tougao.tax',
 						cat: cid
@@ -1111,6 +1193,75 @@ var MOBANTU = {
 		    }
 		});
 
+		jQuery(".question-submit").click(function(){
+			var post_title = jQuery("#post_title").val(),
+				post_cat = jQuery("#cat").val(),
+				post_content = tinyMCE.get('content').getContent(),
+				security_nonce = jQuery("#security_nonce").val(),
+				that = jQuery(this);
+
+			if(jQuery.trim(post_title) == ''){
+				jQuery("#tougao-title-label").addClass("error");
+				layer.msg("请输入标题");
+				return false;
+			}else{
+				jQuery("#tougao-title-label").removeClass("error");
+			}
+
+			if(jQuery.trim(post_cat) <= 0){
+				jQuery("#tougao-cat-label").addClass("error");
+				layer.msg("请选择分类");
+				return false;
+			}else{
+				jQuery("#tougao-cat-label").removeClass("error");
+			}
+
+			if(jQuery.trim(post_content) == ''){
+				jQuery("#tougao-content-label").addClass("error");
+				layer.msg("请输入正文");
+				return false;
+			}else{
+				jQuery("#tougao-content-label").removeClass("error");
+			}
+
+			if(!that.hasClass('disabled')){
+				that.addClass("disabled");
+				layer.msg("提交中...");
+				jQuery.ajax({  
+					type: 'POST',  
+					url:  uru_ajax+"/action/user.php",  
+					dataType: 'json',
+					data: {
+						action: 'user.ask',
+						title: post_title,
+						cat: post_cat,
+						content: post_content,
+						security_nonce: security_nonce
+					},
+					success: function(data){  
+						
+						layer.msg(data.msg);
+						if( data.error ){
+							that.removeClass("disabled");
+							return false;
+						}
+						
+						if(data.link){
+							location.href=data.link;
+						}else{
+							setTimeout(function(){
+								location.reload();
+							},2000);
+							
+						}
+					}  
+
+				});
+			}
+			return false;
+
+		});
+
 		jQuery(".tougao-submit").click(function(){
 			var post_title = jQuery("#post_title").val(),
 				post_cat = jQuery("#cat").val(),
@@ -1155,7 +1306,7 @@ var MOBANTU = {
 				layer.msg("提交中...");
 				jQuery.ajax({  
 					type: 'POST',  
-					url:  _MBT.uru+"/action/user.php",  
+					url:  uru_ajax+"/action/user.php",  
 					dataType: 'json',
 					data: {
 						action: 'user.tougao',
@@ -1240,7 +1391,7 @@ var MOBANTU = {
 				layer.msg("提交中...");
 				jQuery.ajax({  
 					type: 'POST',  
-					url:  _MBT.uru+"/action/user.php",  
+					url:  uru_ajax+"/action/user.php",  
 					dataType: 'json',
 					data: {
 						action: 'user.tougao.draft',
@@ -1296,8 +1447,16 @@ var MOBANTU = {
 		var that = this;
 		var windowTop = 0,  windowTop2 = 0;
 		jQuery(window).scroll(function() {
+			if(document.documentElement.scrollTop + document.body.scrollTop > 10){
+				jQuery('.topbar').addClass('scrolled');
+				jQuery('body').addClass('topbar-hide');
+			}else{
+				jQuery('.topbar').removeClass('scrolled');
+				jQuery('body').removeClass('topbar-hide');
+			}
 			document.documentElement.scrollTop + document.body.scrollTop > 79 ? jQuery('.header').addClass('scrolled') : jQuery('.header').removeClass('scrolled');
 			document.documentElement.scrollTop + document.body.scrollTop > 150 ? jQuery('.totop-li').show() : jQuery('.totop-li').hide();
+			document.documentElement.scrollTop + document.body.scrollTop > 300 ? jQuery('.single-content > .erphpdown-box').addClass("fixed") : jQuery('.single-content > .erphpdown-box').removeClass("fixed");
 
 			var scrolls = jQuery(this).scrollTop();
 			if(_MBT.hanimated == '1' && that.bodywid > 1024){
@@ -1317,21 +1476,6 @@ var MOBANTU = {
 			    }
 			}
 
-			/*if(jQuery('.footer-fixed-nav').length && that.bodywid <= 768){
-				if(scrolls<windowTop){
-			        if (!jQuery('.footer-fixed-nav').hasClass('slideInUp')) {
-			            jQuery('.footer-fixed-nav').addClass('animated slideInUp');
-			            jQuery('.footer-fixed-nav').removeClass('slideOutDown');
-			        }
-			        windowTop=scrolls;
-			    }else{
-			        if (!jQuery('.footer-fixed-nav').hasClass('slideOutDown')) {
-			            jQuery('.footer-fixed-nav').addClass('animated slideOutDown');
-			            jQuery('.footer-fixed-nav').removeClass('slideInUp');
-			        }
-			        windowTop=scrolls;
-			    }
-			}*/
 		});
 	},
 	lazyload: function(){
@@ -1353,6 +1497,21 @@ var MOBANTU = {
 		          placeholder: loading,
 		          threshold: 400
 		    });
+		}
+	},
+	waterLoad: function(){
+		var that = this;
+		if(jQuery(".posts").length && jQuery(".grids").length){
+			var grids = document.querySelector('.grids');
+			imagesLoaded( grids, function() {
+				
+			    var msnry = new Masonry( grids, {
+			      itemSelector: '.grid',
+			      visibleStyle: { transform: 'translateY(0)', opacity: 1 },
+					  hiddenStyle: { transform: 'translateY(100px)', opacity: 0 },
+			    });
+			    
+			});
 		}
 	},
 	iasLoad: function(){
@@ -1560,9 +1719,15 @@ var MOBANTU = {
 			con.html('<div class="posts-loading" style="display:block"><div class="loadings"> <span></span> <span></span> <span></span> <span></span> <span></span> </div></div>');
 			the.parent().parent().find('a').removeClass('active');
 	        the.addClass('active');
+
+	        var urc_ajax = _MBT.uri;
+	        if(_MBT.urc == '1'){
+	        	urc_ajax = _MBT.child;
+	        }
+
 			jQuery.ajax({
 		        type: 'get',
-		        url: _MBT.urc + '/action/mocat.php?c='+jQuery(this).data('c')+'&c2='+jQuery(this).data('c2')+'&num='+jQuery(this).data('num'),
+		        url: urc_ajax + '/action/mocat.php?c='+jQuery(this).data('c')+'&c2='+jQuery(this).data('c2')+'&num='+jQuery(this).data('num'),
 		        success: function(data){
 		            con.html(data);
 		            that.video();
@@ -1594,9 +1759,15 @@ var MOBANTU = {
 			con.html('<div class="posts-loading" style="display:block"><div class="loadings"> <span></span> <span></span> <span></span> <span></span> <span></span> </div></div>');
 			the.parent().parent().find('a').removeClass('active');
 	        the.addClass('active');
+
+	        var urc_ajax = _MBT.uri;
+	        if(_MBT.urc == '1'){
+	        	urc_ajax = _MBT.child;
+	        }
+
 			jQuery.ajax({
 		        type: 'get',
-		        url: _MBT.urc + '/action/mocat.php?cf=1&c='+jQuery(this).data('c')+'&o='+jQuery(this).data('o')+'&num='+jQuery(this).data('num'),
+		        url: urc_ajax + '/action/mocat.php?cf=1&c='+jQuery(this).data('c')+'&o='+jQuery(this).data('o')+'&num='+jQuery(this).data('num'),
 		        success: function(data){
 		            con.html(data);
 		            that.video();
@@ -1624,8 +1795,8 @@ var MOBANTU = {
 		    
 	        jQuery('.cat-nav > li').removeClass('current-menu-item');
 	        jQuery(this).parent().addClass('current-menu-item');
-	        jQuery(".posts-loading").show();
-	        jQuery("#posts, .pagination").hide();
+	        jQuery("#posts").html('<div class="posts-loading" style="display:block"><div class="loadings"> <span></span> <span></span> <span></span> <span></span> <span></span> </div></div>');
+	        jQuery(".pagination").hide();
 	        jQuery(".pagination").html('');
 	        jQuery(".pagination-trigger").remove();
 
@@ -1655,8 +1826,7 @@ var MOBANTU = {
 		            }else{
 		            	jQuery(".pagination").show();
 		            }
-	                
-                    jQuery(".posts-loading").hide();
+
                     jQuery("#posts").show();
                     that.video();   
                     that.audio(); 
@@ -1671,7 +1841,7 @@ var MOBANTU = {
 		jQuery(function($){
 			$("body").on("click", ".erphplogin-weixin-loader", function(){
 				$.post(
-					_MBT.uri+'/action/login.php',
+					urg_ajax+'/action/login.php',
 					{
 						url: $(this).data("return"),
 						action: "mobantu_return",
@@ -1850,7 +2020,7 @@ var MOBANTU = {
 				logtips("登录中，请稍等...");
 				$('.signinsubmit-loader').attr("disabled",true);
 				$.post(
-					_MBT.uri+'/action/login.php',
+					urg_ajax+'/action/login.php',
 					{
 						log: $("#user_login").val(),
 						pwd: $("#user_pass").val(),
@@ -1861,6 +2031,7 @@ var MOBANTU = {
 						if ($.trim(data) != "1") {
 							logtips(data);
 							$('.signinsubmit-loader').attr("disabled",false);
+							$('#sign-in .captcha-clk2').trigger("click");
 						}
 						else {
 							logtips("登录成功，跳转中...");
@@ -1890,7 +2061,7 @@ var MOBANTU = {
 	            logtips("注册中，请稍等...");
 	            $('.signupsubmit-loader').attr("disabled",true);
 	            $.post(
-	            	_MBT.uri+'/action/login.php',
+	            	urg_ajax+'/action/login.php',
 	            	{
 	            		user_register: $("#user_register").val(),
 	            		user_email: $("#user_email").val(),
@@ -1905,6 +2076,7 @@ var MOBANTU = {
 						}else {
 							logtips(data);
 							$('.signupsubmit-loader').attr("disabled",false);
+							$('#sign-up .captcha-clk2').trigger("click");
 						}
 					}
 				);										   
@@ -1927,7 +2099,7 @@ var MOBANTU = {
 	            logtips("登录中，请稍等...");
 	            $('.signsmssubmit-loader').attr("disabled",true);
 	            $.post(
-	            	_MBT.uri+'/action/login.php',
+	            	urg_ajax+'/action/login.php',
 	            	{
 	            		mobile: $("#user_mobile").val(),
 	            		captcha: $("#user_mobile_captcha").val(),
@@ -2022,7 +2194,7 @@ var MOBANTU = {
 					captcha.addClass("disabled");
 					captcha.html("发送中...");
 					$.post(
-						_MBT.uri+'/action/login.php',
+						urg_ajax+'/action/login.php',
 						{
 							action: "mobantu_captcha_sms",
 							mobile:$("#user_mobile").val()
@@ -2067,7 +2239,8 @@ var MOBANTU = {
 			if($(".erphp-weixin-scan-pro").length){
 		        $(".erphp-weixin-scan-pro .ews-qrcode").addClass("blur");
 		        $.post(ews_ajax_url, {
-		            "action": "ews_login_pro"
+		            "action": "ews_login_pro",
+		            "domain": window.location.host
 		        }, function(result) {
 		            if(result.status == "1"){
 		                $(".erphp-weixin-scan-pro .ews-qrcode").attr("src", result.img).removeClass("blur");
@@ -2398,10 +2571,10 @@ var MOBANTU = {
 		        if (wait > 0) {
 		            $submit.val(wait);
 		            wait--;
-		            setTimeout(countdown, 1000)
+		            setTimeout(countdown, 1000);
 		        } else {
 		            $submit.val(submit_val).attr('disabled', false).fadeTo('slow', 1);
-		            wait = 15
+		            wait = 15;
 		        }
 		    }
 		});
@@ -2410,11 +2583,42 @@ var MOBANTU = {
 		var that = this;
 
 		jQuery('pre').each(function(){
-		    if( !jQuery(this).attr('style') ) jQuery(this).addClass('prettyprint')
+		    if( !jQuery(this).attr('style') ){
+		     	jQuery(this).addClass('prettyprint');
+		    }
 		});
 
 		if( jQuery('.prettyprint').length ){
 		    prettyPrint();
+		}
+
+		if(jQuery('.widget-erphpdown').length){
+			if(jQuery('.widget-erphpdown').html() == '<div class="custom-metas" style="margin-top:0"></div>'){
+				jQuery('.widget-erphpdown').remove();
+			}
+		}
+
+		if(_MBT.post_h3_nav == '1' && jQuery(".article-content h3").length){
+			jQuery(".single-content").append('<div class="post-fixed-nav"><div class="post-h3-nav"><ul><li class="tit active"><a href="#single-content">目录</a></li></ul></div></div>');
+			jQuery(".article-content h3").each(function(index) {  
+	            var title = $(this).text(); 
+	            var id = 'h3-' + index; 
+	            $(this).attr('id', id); 
+	            var href = '#' + id;
+	            var li = jQuery('<li></li>').append($('<a></a>').attr('href', href).text(title)); 
+	            jQuery('.post-h3-nav ul').append(li); 
+	        });  
+	        
+	        jQuery('.post-h3-nav ul').onePageNav({currentClass:'active'});
+		    console.log(jQuery(".single-content").offset().top);
+		    jQuery(window).scroll(function() {
+		        var articleTop = jQuery(".single-content").offset().top;
+	        	document.documentElement.scrollTop + document.body.scrollTop > articleTop ? jQuery('.post-fixed-nav').css('top',document.documentElement.scrollTop +document.body.scrollTop-articleTop+120) : jQuery('.post-fixed-nav').css('top',30);
+	        });
+		}
+
+		if(_MBT.down_fixed == '1' && jQuery('.erphpdown-box').length && !jQuery('.erphpdown-box .erphpdown-child').length){
+			jQuery(".single-content").append(jQuery(".erphpdown-box").clone());
 		}
 
 		if(that.plazy){
@@ -2440,6 +2644,20 @@ var MOBANTU = {
 				}
 			});
 		}
+
+		jQuery("body").on("click",".playicon.pre",function() {
+			var that = $(this);
+			jQuery("body").append('<div class="video-pop" style="display:block"><iframe src="'+that.data("video")+'" scrolling="no" border="0" frameborder="no" framespacing="0" allowfullscreen="allowfullscreen" width="100%" height="100%"></iframe><a href="javascript:;" class="close"><i class="icon icon-close"></i></a></div><div class="video-pop-shadow" style="display:block"></div>');
+
+			jQuery(".video-pop").click(function(){
+				jQuery(".video-pop-shadow").remove();
+				jQuery(".video-pop").remove();
+			});
+		});
+
+		jQuery(".article-content video").each(function(){
+			jQuery(this).attr('controlslist','nodownload noremoteplayback ');
+		});
 
 		jQuery(".article-content object, .article-content .external-video iframe").each(function(){
 		    jQuery(this).width("100%");
@@ -2520,9 +2738,22 @@ var MOBANTU = {
 					if(!jQuery(this).parent("a").length){
 						jQuery(this).wrap("<a href='"+jQuery(this).attr('src')+"'></a>");
 					}
-					jQuery(this).parent("a").attr("data-fancybox",tid);
+					if(jQuery(this).parent("a").attr("href") == jQuery(this).attr('src')){
+						jQuery(this).parent("a").attr("data-fancybox",tid);
+					}
 				});
 			}
+		}
+
+		if(jQuery(".article-content-all-more").length){
+			var articleContentAll = document.querySelector('.article-content-all');
+			if (articleContentAll.scrollHeight > articleContentAll.clientHeight) {
+				jQuery(".article-content-all-more").show();
+			}
+
+			jQuery(".article-content-all-more span").click(function(){
+				jQuery('.article-content-all').addClass("show");
+			});
 		}
 
 		jQuery(".article-tabs-tab a").click(function(){
@@ -2537,6 +2768,33 @@ var MOBANTU = {
 			jQuery(".article-faqs .item").removeClass("active");
 			jQuery(this).parent().addClass("active");
 		});
+
+		jQuery("body").on("click", ".erphpdown-see-btn2", function(){
+	    	var post_id = jQuery(this).data("post"),
+	    		vip = jQuery(this).data("vip"),
+	    		token = jQuery(this).data("token");
+	        if(post_id){
+	            layer.msg("处理中...");
+	            jQuery.post(_ERPHP.ajaxurl, {
+	                "action": "epd_see2",
+	                "post_id": post_id,
+	                "vip": vip,
+	                "token": token
+	            }, function(result) {
+	                
+	                if( result.status == 200 ){
+	                    location.reload(true);
+	                }else if( result.status == 202 ){
+	                    layer.msg("抱歉，权限不足！");
+	                }else{
+	                    layer.msg("查看失败，请检查今天的查看次数是否已用光！");
+	                }
+	            }, 'json'); 
+	        }else{
+	            layer.msg("查看失败！");
+	        }
+	        return false;
+	    });
 
 		if(jQuery(".article-shang").length){
 			var _article_shang = {
@@ -2709,53 +2967,56 @@ var MOBANTU = {
 		}
 
 		jQuery('.article-collect').on('click', function() {
-		  var vote_btn = jQuery(this);
-		  var pid = vote_btn.data('id');
-		  if (pid) {
-		  	var nn = Number(vote_btn.find("span").text());
-		    jQuery.ajax({
-		       url: _MBT.uri+'/action/collect.php',
-		       type: 'POST',
-		       dataType: 'json', 
-		       data: {
-		         id:pid
-		       },
-		      success: function(data) {
-		        if (data.result == '1') {
-		          vote_btn.addClass('active').html('<i class="icon icon-star"></i> <span>'+(nn+1)+'</span>');
-		        }else if (data.result == '2') {
-		        	if(jQuery(".user-gridlist").length){
-		        		location.reload();
-		        	}else{
-		        		vote_btn.removeClass('active').html('<i class="icon icon-star"></i> <span>'+(nn-1)+'</span>');
-		        	} 
-		        }    
-		      }
-		 	});
-		  }
-		  return false;
+			if($("body").hasClass("logged-in")){
+			  var vote_btn = jQuery(this);
+			  var pid = vote_btn.data('id');
+			  if (pid) {
+			  	var nn = Number(vote_btn.find("span").text());
+			    jQuery.ajax({
+			       url: _MBT.uri+'/action/collect.php',
+			       type: 'POST',
+			       dataType: 'json', 
+			       data: {
+			         id:pid
+			       },
+			      success: function(data) {
+			        if (data.result == '1') {
+			          vote_btn.addClass('active').html('<i class="icon icon-star"></i> <span>'+(nn+1)+'</span>');
+			        }else if (data.result == '2') {
+			        	if(jQuery(".user-gridlist").length){
+			        		location.reload();
+			        	}else{
+			        		vote_btn.removeClass('active').html('<i class="icon icon-star"></i> <span>'+(nn-1)+'</span>');
+			        	} 
+			        }    
+			      }
+			 	});
+			  }
+		    }
 		});
 
 		jQuery('.side-collect').on('click', function() {
-		  var vote_btn = jQuery(this);
-		  var pid = vote_btn.data('id');
-		  if (pid) {
-		    jQuery.ajax({
-		       url: _MBT.uri+'/action/collect.php',
-		       type: 'POST',
-		       dataType: 'json', 
-		       data: {
-		         id:pid
-		       },
-		      success: function(data) {
-		        if (data.result == '1') {
-		            vote_btn.addClass('active').html('<i class="icon icon-star-s"></i> 取消收藏');
-		        }else if (data.result == '2') {
-		        	vote_btn.removeClass('active').html('<i class="icon icon-star"></i> 加入收藏');
-		        }    
-		      }
-		 	});
-		  }
+			if($("body").hasClass("logged-in")){
+			  var vote_btn = jQuery(this);
+			  var pid = vote_btn.data('id');
+			  if (pid) {
+			    jQuery.ajax({
+			       url: _MBT.uri+'/action/collect.php',
+			       type: 'POST',
+			       dataType: 'json', 
+			       data: {
+			         id:pid
+			       },
+			      success: function(data) {
+			        if (data.result == '1') {
+			            vote_btn.addClass('active').html('<i class="icon icon-star-s"></i> 取消收藏');
+			        }else if (data.result == '2') {
+			        	vote_btn.removeClass('active').html('<i class="icon icon-star"></i> 加入收藏');
+			        }    
+			      }
+			 	});
+			  }
+			}
 		  
 		});
 	},
@@ -2887,60 +3148,70 @@ jQuery(function($){
 		});
 	}
 
-	$(".erphpdown-tuan-loader").on("click",function(){
-        var post_id = $(this).data("post");
-        var tuan_num = $(this).data("num");
-        if(post_id){
-            layer.msg('处理中...',{time:-1});
-            $.post(_MBT.admin_ajax, {
-                "action": "epd_tuan",
-                "post_id": post_id,
-                "tuan_num": tuan_num
-            }, function(result) {
-                if( result.status == 200 ){
-                    location.reload(true);
-                }else if( result.status == 201 ){
-                    layer.msg(result.msg);
-                }else{
-                    layer.msg("参团失败，请稍后重试！");
-                }
-            }, 'json'); 
-        }
-        return false;
-    });
+	if(_MBT.tuan == '1'){
+		$(".erphpdown-tuan-loader").on("click",function(){
+	        var post_id = $(this).data("post");
+	        var tuan_num = $(this).data("num");
+	        if(post_id){
+	            layer.msg("处理中...", {
+			        icon: 16,
+			        shade: 0.4,
+			        time: -1
+			    });
+	            $.post(_MBT.admin_ajax, {
+	                "action": "epd_tuan",
+	                "post_id": post_id,
+	                "tuan_num": tuan_num
+	            }, function(result) {
+	                if( result.status == 200 ){
+	                    location.reload(true);
+	                }else if( result.status == 201 ){
+	                    layer.msg(result.msg);
+	                }else{
+	                    layer.msg("参团失败，请稍后重试！");
+	                }
+	            }, 'json'); 
+	        }
+	        return false;
+	    });
 
-    $(".erphpdown-tuituan").click(function(){
-        var post_tui = $(this).data("tui");
-        if(confirm("退团会扣除"+post_tui+"%的手续费哦~")){
-            var post_id = $(this).data("post");
-            var tuan_num = $(this).data("num");
-            if(post_id && tuan_num){
-                layer.msg('处理中...',{time:-1});
-                $.post(_MBT.admin_ajax, {
-                    "action": "epd_tuituan",
-                    "post_id": post_id,
-                    "tuan_num": tuan_num
-                }, function(result) {
-                    
-                    if( result.status == 200 ){
-                    	layer.msg("退团成功！");
-                        location.reload(true);
+	    $(".erphpdown-tuituan").click(function(){
+	        var post_tui = $(this).data("tui");
+	        if(confirm("退团会扣除"+post_tui+"%的手续费哦~")){
+	            var post_id = $(this).data("post");
+	            var tuan_num = $(this).data("num");
+	            if(post_id && tuan_num){
+	                layer.msg("处理中...", {
+				        icon: 16,
+				        shade: 0.4,
+				        time: -1
+				    });
+	                $.post(_MBT.admin_ajax, {
+	                    "action": "epd_tuituan",
+	                    "post_id": post_id,
+	                    "tuan_num": tuan_num
+	                }, function(result) {
+	                    
+	                    if( result.status == 200 ){
+	                    	layer.msg("退团成功！");
+	                        location.reload(true);
 
-                    }else if( result.status == 201 ){
-                        layer.msg(result.msg);
-                        if(result.reload){
-                            location.reload(true);
-                        }
-                    }else{
-                        layer.msg("退团失败，请稍后重试！");
-                    }
-                }, 'json'); 
-            }else{
-                layer.msg("获取退团信息失败！");
-            }
-            return false;
-        }
-    });
+	                    }else if( result.status == 201 ){
+	                        layer.msg(result.msg);
+	                        if(result.reload){
+	                            location.reload(true);
+	                        }
+	                    }else{
+	                        layer.msg("退团失败，请稍后重试！");
+	                    }
+	                }, 'json'); 
+	            }else{
+	                layer.msg("获取退团信息失败！");
+	            }
+	            return false;
+	        }
+	    });
+	}
 
     if($('.erphp-login-tips').length){
         setTimeout(function(){$('.erphp-login-tips').css("bottom","0");},'1500');
@@ -3250,7 +3521,7 @@ utils = {
 				d = l + "/" + d;
 				var c = 0,
 				u = 0;
-				n.fillStyle = "#fff",
+				/*n.fillStyle = "#fff",
 				n.textAlign = "center",
 				n.font = "68px PingFang SC,Hiragino Sans GB,Microsoft YaHei UI,Microsoft YaHei,Source Han Sans CN,sans-serif";
 				for (var h = 0; h < r.length; h++) c += n.measureText(r[h]).width;
@@ -3259,7 +3530,7 @@ utils = {
 				n.textAlign = "center",
 				n.font = "30px PingFang SC,Hiragino Sans GB,Microsoft YaHei UI,Microsoft YaHei,Source Han Sans CN,sans-serif";
 				for (var h = 0; h < d.length; h++) u += n.measureText(d[h]).width;
-				n.fillText(d, 80, o - 28);
+				n.fillText(d, 80, o - 28);*/
 				var p = parseInt(u > c ? u: c);
 				n.moveTo(80 - p / 2, o - 60),
 				n.lineTo(80 - p / 2 + p, o - 60),

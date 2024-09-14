@@ -1,7 +1,7 @@
 <html lang="zh-CN">
 <head>
 	<meta charset="UTF-8">
-	<link rel="stylesheet" href="/wp-content/plugins/erphpdown/static/erphpdown.css?v=16.1" type="text/css">
+	<link rel="stylesheet" href="/wp-content/plugins/erphpdown/static/erphpdown.css?v=17.3" type="text/css">
 	<link rel="shortcut icon">
 	<script type="text/javascript" src="/wp-content/plugins/erphpdown/static/jquery-1.7.min.js"></script>
 	<script type="text/javascript" id="erphpdown-js-extra">
@@ -9,8 +9,9 @@
 	var _ERPHP = {"ajaxurl":"/wp-admin/admin-ajax.php"};
 	var erphpdown_ajax_url = "/wp-admin/admin-ajax.php";
 	/* ]]> */
+	window._ERPHPDOWN = {"uri":"/wp-content/plugins/erphpdown", "tuan":"", "author": "mobantu"}
 	</script>
-	<script type="text/javascript" src="/wp-content/plugins/erphpdown/static/erphpdown.js?v=16.1"></script>
+	<script type="text/javascript" src="/wp-content/plugins/erphpdown/static/erphpdown.js?v=17.3"></script>
 </head>
 <style>::-webkit-scrollbar {width:0;height:6px}
 ::-webkit-scrollbar-thumb {background-color: #c7c7c7;border-radius:5px;}
